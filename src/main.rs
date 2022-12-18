@@ -18,6 +18,7 @@ fn main() {
     let print_speed = 2700; // mm/min
     let overhang_speed = 300; // mm/min
     let overhang_flow = 1.2;
+    let z_offset = 0.1; // mm
 
     // print specifics
     let disc_diameter = 30.0; // mm
@@ -35,7 +36,7 @@ fn main() {
     printer.set_bed_temp(bed_temp, true);
     printer.set_hotend_temp(hotend_temp, true);
     printer.home();
-    //printer.level_bed();
+    printer.level_bed();
     printer.absolute_extrusion();
     printer.set_extrusion(0.0);
     
@@ -48,12 +49,14 @@ fn main() {
     printer.travel_to(printer.position + point3!(0, 0, 5));
     
     printer.travel_to(point3!(150, 150, 5));
-    print_cylinder(&mut printer, disc_diameter, 5.0, point3!(150, 150, 0.25), line_width, layer_height);
+    print_cylinder(&mut printer, disc_diameter, 5.0, point3!(150, 150, z_offset), line_width, layer_height);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter);
-    // raise up a bit
+    // retract, then raise up a bit
+    printer.move_extruder(-5.0);
     printer.travel_to(point3!(printer.position.x, printer.position.y, 20.0 + printer.position.z));
     printer.travel_to(point3!(printer.position.x, 10, printer.position.z));
+    printer.move_extruder(5.0);
 
     printer.write_cache();
     let elapsed = now.elapsed();

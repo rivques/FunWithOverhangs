@@ -124,4 +124,9 @@ impl Printer {
         self.gcode_file.write(self.file_cache.as_bytes()).unwrap();
         self.file_cache = String::new();
     }
+
+    pub fn move_extruder(&mut self, dist: f64){
+        self.extruder += dist;
+        self.file_cache += &format!("G1 E{} F300", self.extruder);
+    }
 }
