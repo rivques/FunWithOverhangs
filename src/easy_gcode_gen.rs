@@ -96,10 +96,21 @@ impl Printer {
     }
 
     pub fn extrude_to(&mut self, point: na::Vector3<f64>){
-        let new_extruder_pos: f64 = (point-self.position).magnitude() * self.extrude_dist_per_travel * self.flow_multiplier + self.extruder;
+        let new_extruder_pos = self.get_extrude_dist(point) + self.extruder;
         self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, new_extruder_pos, self.print_feedrate);
         self.position = point;
         self.extruder = new_extruder_pos;
+    }
+
+    pub fn get_extrude_dist(&self, point: na::Matrix<f64, na::Const<3>, na::Const<1>, na::ArrayStorage<f64, 3, 1>>) -> f64 {
+        let new_extruder_pos: f64 = (point-self.position).magnitude() * self.extrude_dist_per_travel * self.flow_multiplier;
+        new_extruder_pos
+    }
+
+    pub fn extrude_with_explicit_flow(&mut self, point: na::Vector3<f64>, flow_dist: f64){
+        self.extruder += flow_dist;
+        self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, self.extruder, self.print_feedrate);
+        self.position = point;
     }
 
     pub fn set_layer_height(&mut self, layer_height: f64) {
@@ -129,4 +140,6 @@ impl Printer {
         self.extruder += dist;
         self.file_cache += &format!("G1 E{} F300", self.extruder);
     }
+
+    
 }
