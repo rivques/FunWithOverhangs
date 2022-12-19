@@ -78,7 +78,10 @@ fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, la
     printer.set_print_feedrate(2000);
     printer.comment("printing with decay");
     let start_z = printer.position.z;
-    print_cylinder(printer, disc_diameter, 5.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
+    print_cylinder(printer, disc_diameter, 4.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
+    printer.comment("end decay");
+    let start_z = printer.position.z;
+    print_cylinder(printer, disc_diameter, 1.0, point3!(150, 150, start_z), line_width, layer_height, false);
 }
 
 fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_location: na::Vector3<f64>, spacing: f64, layer_height: f64, distance_decay: bool){
@@ -104,7 +107,7 @@ fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_lo
 }
 
 fn circle_decay_flow_factor(r: f64, diameter: f64) -> f64 {
-    -(2.0/diameter*r).powf(2.0) + 1.0
+    -(2.0/(1.05*diameter)*r).powf(2.0) + 1.0
 }
 
 // fn map(x: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
