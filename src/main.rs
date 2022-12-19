@@ -59,6 +59,15 @@ fn main() {
     printer.travel_to(point3!(printer.position.x, printer.position.y, 20.0 + printer.position.z));
     printer.travel_to(point3!(printer.position.x, 10, printer.position.z));
     printer.move_extruder(5.0);
+    printer.set_bed_temp(0.0, false);
+    printer.set_hotend_temp(0.0, false);
+
+    let print_time = printer.get_time_spent();
+    let seconds = print_time.as_secs() % 60;
+    let minutes = (print_time.as_secs() / 60) % 60;
+    let hours = (print_time.as_secs() / 60) / 60; 
+    printer.comment(&format!("Print took {}:{}:{} and used {:.3}m of filament", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0)));
+    println!("Print took {}:{}:{} and used {:.3}m of filament", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0));
 
     printer.write_cache();
     let elapsed = now.elapsed();
@@ -78,17 +87,20 @@ fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, la
     printer.set_print_feedrate(2000);
     printer.comment("printing with decay");
     let start_z = printer.position.z;
-    print_cylinder(printer, disc_diameter, 4.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
+    print_cylinder(printer, disc_diameter, 3.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
     printer.comment("end decay");
     let start_z = printer.position.z;
-    print_cylinder(printer, disc_diameter, 1.0, point3!(150, 150, start_z), line_width, layer_height, false);
+    print_cylinder(printer, disc_diameter, 2.0, point3!(150, 150, start_z), line_width, layer_height, false);
 }
 
 fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_location: na::Vector3<f64>, spacing: f64, layer_height: f64, distance_decay: bool){
     // let's spiral out, a few times on top of each other
     for layer in 1..=((height/layer_height).floor() as i32) {
         //println!("Now on layer {}/{}, decaying? {}", layer, ((height/layer_height).floor() as i32), distance_decay);
+        printer.move_extruder(-3.0);
         printer.travel_to(starting_location + point3!(0, 0, layer as f64*layer_height));
+        printer.move_extruder(3.0);
+
         for theta_deg in (0..(360*(diameter/2.0/spacing).floor() as i32)).step_by(5) {
             let theta = theta_deg as f64 * PI / 180.0;
             let r = (spacing / (2.0*PI)) * theta;

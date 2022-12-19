@@ -1,6 +1,7 @@
 use std::f64::consts::PI;
 use std::fs::File;
 use std::io::prelude::*;
+use std::time::Duration;
 use nalgebra as na;
 
 #[macro_export]
@@ -21,7 +22,9 @@ pub struct Printer {
     filament_diameter: f64,
     flow_multiplier: f64,
     extrude_dist_per_travel: f64,
-    file_cache: String
+    file_cache: String,
+    dist_extruded: f64,
+    time_spent: Duration,
 }
 
 impl Printer {
@@ -42,6 +45,8 @@ impl Printer {
             flow_multiplier,
             extrude_dist_per_travel,
             file_cache: String::new(),
+            dist_extruded: 0.0,
+            time_spent: Duration::new(0, 0),
         }
     }
     pub fn set_bed_temp(&mut self, temp: f64, wait: bool){
@@ -84,6 +89,7 @@ impl Printer {
 
     pub fn travel_to(&mut self, point: na::Vector3<f64>){
         self.file_cache += &format!("G0 X{} Y{} Z{} F{}\n", point.x, point.y, point.z, self.travel_feedrate);
+        self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.travel_feedrate as f64)*60.0);
         self.position = point;
     }
 
@@ -97,19 +103,22 @@ impl Printer {
 
     pub fn extrude_to(&mut self, point: na::Vector3<f64>){
         let new_extruder_pos = self.get_extrude_dist(point) + self.extruder;
+        self.dist_extruded += self.get_extrude_dist(point);
         self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, new_extruder_pos, self.print_feedrate);
+        self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.print_feedrate as f64)*60.0);
         self.position = point;
         self.extruder = new_extruder_pos;
     }
 
     pub fn get_extrude_dist(&self, point: na::Matrix<f64, na::Const<3>, na::Const<1>, na::ArrayStorage<f64, 3, 1>>) -> f64 {
-        let new_extruder_pos: f64 = (point-self.position).magnitude() * self.extrude_dist_per_travel * self.flow_multiplier;
-        new_extruder_pos
+        (point-self.position).magnitude() * self.extrude_dist_per_travel * self.flow_multiplier
     }
 
     pub fn extrude_with_explicit_flow(&mut self, point: na::Vector3<f64>, flow_dist: f64){
         self.extruder += flow_dist;
+        self.dist_extruded += flow_dist;
         self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, self.extruder, self.print_feedrate);
+        self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.print_feedrate as f64)*60.0);
         self.position = point;
     }
 
@@ -138,10 +147,19 @@ impl Printer {
 
     pub fn move_extruder(&mut self, dist: f64){
         self.extruder += dist;
+        self.dist_extruded += dist;
         self.file_cache += &format!("G1 E{} F300", self.extruder);
     }
 
     pub fn comment(&mut self, comment: &str){
         self.file_cache += &format!("; {}\n", comment);
+    }
+
+    pub fn get_dist_extruded(&self) -> f64 {
+        self.dist_extruded
+    }
+
+    pub fn get_time_spent(&self) -> Duration {
+        self.time_spent
     }
 }
