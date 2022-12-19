@@ -29,6 +29,7 @@ fn main() {
 
     // let's start simple and print a line
     // setup
+    printer.comment("Double mushroom");
     printer.set_bed_temp(bed_temp, false);
     printer.set_hotend_temp(hotend_temp, false);
     printer.set_bed_temp(bed_temp, true);
@@ -39,6 +40,7 @@ fn main() {
     printer.set_extrusion(0.0);
     
     // purge line
+    printer.comment("Purge line");
     printer.set_flow_multiplier(2.0);
     printer.travel_to(point3!(30, 35, 0.4));
     printer.extrude_to(point3!(190, 35, 0.4));
@@ -46,11 +48,13 @@ fn main() {
     printer.set_extrusion(0.0);
     printer.travel_to(printer.position + point3!(0, 0, 5));
     
+    printer.comment("begin cylinder");
     printer.travel_to(point3!(150, 150, 5));
     print_cylinder(&mut printer, disc_diameter, 5.0, point3!(150, 150, z_offset), line_width, layer_height, false);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter);
     // retract, then raise up a bit
+    printer.comment("retract");
     printer.move_extruder(-5.0);
     printer.travel_to(point3!(printer.position.x, printer.position.y, 20.0 + printer.position.z));
     printer.travel_to(point3!(printer.position.x, 10, printer.position.z));
@@ -63,13 +67,16 @@ fn main() {
 
 fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, layer_height: f64, overhang_speed: i32, disc_diameter: f64) {
     let start_z = printer.position.z;
+    printer.comment("Printing mushroom");
     print_cylinder(printer, axle_diameter, 5.0, point3!(150, 150, start_z), line_width, layer_height, false);
     let start_z = printer.position.z;
+    printer.comment("Printing overhang");
     printer.set_print_feedrate(overhang_speed);
     printer.set_fan(1.0);
     print_cylinder(printer, disc_diameter, layer_height, point3!(150, 150, start_z), 0.35, layer_height, false);
     print_cylinder(printer, disc_diameter, layer_height, point3!(150, 150, start_z+layer_height), 0.4, layer_height, false);
     printer.set_print_feedrate(2000);
+    printer.comment("printing with decay");
     let start_z = printer.position.z;
     print_cylinder(printer, disc_diameter, 5.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
 }
@@ -77,13 +84,17 @@ fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, la
 fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_location: na::Vector3<f64>, spacing: f64, layer_height: f64, distance_decay: bool){
     // let's spiral out, a few times on top of each other
     for layer in 1..=((height/layer_height).floor() as i32) {
+        //println!("Now on layer {}/{}, decaying? {}", layer, ((height/layer_height).floor() as i32), distance_decay);
         printer.travel_to(starting_location + point3!(0, 0, layer as f64*layer_height));
         for theta_deg in (0..(360*(diameter/2.0/spacing).floor() as i32)).step_by(5) {
             let theta = theta_deg as f64 * PI / 180.0;
             let r = (spacing / (2.0*PI)) * theta;
             let point = point3!(r*theta.cos() + starting_location.x, r*theta.sin() + starting_location.y, printer.position.z);
             if distance_decay{
-                printer.extrude_with_explicit_flow(point, circle_decay_flow(Printer::get_extrude_dist(&printer, point), r, diameter));
+                let print_factor = circle_decay_flow_factor(r, diameter);
+                let in_flow = Printer::get_extrude_dist(&printer, point);
+                printer.extrude_with_explicit_flow(point, print_factor*in_flow);
+                //printer.comment(&format!("Decayed flow: r is {}, dia {}, factor {}, old flow {}", r, diameter, print_factor, in_flow));
             } else {
                 printer.extrude_to(point)
             }
@@ -92,9 +103,8 @@ fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_lo
     }
 }
 
-fn circle_decay_flow(in_flow: f64, r: f64, diameter: f64) -> f64 {
-    let factor = (-2.0/diameter*r).powf(2.0) + 1.0;
-    in_flow * factor
+fn circle_decay_flow_factor(r: f64, diameter: f64) -> f64 {
+    -(2.0/diameter*r).powf(2.0) + 1.0
 }
 
 // fn map(x: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {

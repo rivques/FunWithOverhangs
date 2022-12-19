@@ -141,5 +141,7 @@ impl Printer {
         self.file_cache += &format!("G1 E{} F300", self.extruder);
     }
 
-    
+    pub fn comment(&mut self, comment: &str){
+        self.file_cache += &format!("; {}\n", comment);
+    }
 }
