@@ -19,9 +19,9 @@ fn main() {
     let z_offset = 0.1; // mm
 
     // print specifics
-    let disc_diameter = 40.0; // mm
+    let disc_diameter = 30.0; // mm
     let axle_diameter = 10.0; // mm
-    let file_name = "output\\roller.gcode";
+    let file_name = "output\\small_roller.gcode";
     
     let file = File::create(file_name).unwrap();
 
@@ -50,7 +50,7 @@ fn main() {
     
     printer.comment("begin cylinder");
     printer.travel_to(point3!(150, 150, 5));
-    print_cylinder(&mut printer, disc_diameter, 9.6, point3!(150, 150, z_offset), line_width, layer_height, false);
+    print_cylinder(&mut printer, disc_diameter, 10.0, point3!(150, 150, z_offset), line_width, layer_height, false);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
@@ -78,7 +78,7 @@ fn main() {
 fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, layer_height: f64, overhang_speed: i32, disc_diameter: f64, print_speed: i32) {
     let start_z = printer.position.z;
     printer.comment("Printing mushroom");
-    print_cylinder(printer, axle_diameter, 10.6, point3!(150, 150, start_z), line_width, layer_height, false);
+    print_cylinder(printer, axle_diameter, 10.0, point3!(150, 150, start_z), line_width, layer_height, false);
     let start_z = printer.position.z;
     printer.comment("Printing overhang");
     printer.set_print_feedrate(overhang_speed);
@@ -91,7 +91,7 @@ fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, la
     print_cylinder(printer, disc_diameter, 3.0-layer_height*2.0, point3!(150, 150, start_z), 0.4, layer_height, true);
     printer.comment("end decay");
     let start_z = printer.position.z;
-    print_cylinder(printer, disc_diameter, 9.0, point3!(150, 150, start_z), line_width, layer_height, false);
+    print_cylinder(printer, disc_diameter, 10.0-(3.0-layer_height*2.0), point3!(150, 150, start_z), line_width, layer_height, false);
 }
 
 fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_location: na::Vector3<f64>, spacing: f64, layer_height: f64, distance_decay: bool){
