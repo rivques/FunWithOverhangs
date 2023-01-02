@@ -83,12 +83,12 @@ impl Printer {
     }
 
     pub fn set_extrusion(&mut self, extrusion: f64){
-        self.file_cache += &format!("G92 E{}\n", extrusion);
+        self.file_cache += &format!("G92 E{:.5}\n", extrusion);
         self.extruder = extrusion;
     }
 
     pub fn travel_to(&mut self, point: na::Vector3<f64>){
-        self.file_cache += &format!("G0 X{} Y{} Z{} F{}\n", point.x, point.y, point.z, self.travel_feedrate);
+        self.file_cache += &format!("G0 X{:.4} Y{:.4} Z{:.4} F{:.1}\n", point.x, point.y, point.z, self.travel_feedrate);
         self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.travel_feedrate as f64)*60.0);
         self.position = point;
     }
@@ -104,7 +104,7 @@ impl Printer {
     pub fn extrude_to(&mut self, point: na::Vector3<f64>){
         let new_extruder_pos = self.get_extrude_dist(point) + self.extruder;
         self.dist_extruded += self.get_extrude_dist(point);
-        self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, new_extruder_pos, self.print_feedrate);
+        self.file_cache += &format!("G1 X{:.4} Y{:.4} Z{:.4} E{:.5} F{:.1}\n", point.x, point.y, point.z, new_extruder_pos, self.print_feedrate);
         self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.print_feedrate as f64)*60.0);
         self.position = point;
         self.extruder = new_extruder_pos;
@@ -117,7 +117,7 @@ impl Printer {
     pub fn extrude_with_explicit_flow(&mut self, point: na::Vector3<f64>, flow_dist: f64){
         self.extruder += flow_dist;
         self.dist_extruded += flow_dist;
-        self.file_cache += &format!("G1 X{} Y{} Z{} E{} F{}\n", point.x, point.y, point.z, self.extruder, self.print_feedrate);
+        self.file_cache += &format!("G1 X{:.4} Y{:.4} Z{:.4} E{:.5} F{:.1}\n", point.x, point.y, point.z, self.extruder, self.print_feedrate);
         self.time_spent += Duration::from_secs_f64((point-self.position).magnitude()/(self.print_feedrate as f64)*60.0);
         self.position = point;
     }
@@ -148,7 +148,7 @@ impl Printer {
     pub fn move_extruder(&mut self, dist: f64){
         self.extruder += dist;
         self.dist_extruded += dist;
-        self.file_cache += &format!("G1 E{} F300", self.extruder);
+        self.file_cache += &format!("G1 E{:.5} F300\n", self.extruder);
     }
 
     pub fn comment(&mut self, comment: &str){

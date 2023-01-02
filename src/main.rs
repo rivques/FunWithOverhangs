@@ -51,8 +51,14 @@ fn main() {
     printer.comment("begin cylinder");
     printer.travel_to(point3!(150, 150, 5));
     print_cylinder(&mut printer, disc_diameter, 10.0, point3!(150, 150, z_offset), line_width, layer_height, false);
+    println!("First cylinder:");
+    report_time(&mut printer);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    println!("First mushroom:");
+    report_time(&mut printer);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    println!("Second mushroom:");
+    report_time(&mut printer);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
     // retract, then raise up a bit
     printer.comment("retract");
@@ -63,16 +69,20 @@ fn main() {
     printer.set_bed_temp(0.0, false);
     printer.set_hotend_temp(0.0, false);
 
-    let print_time = printer.get_time_spent();
-    let seconds = print_time.as_secs() % 60;
-    let minutes = (print_time.as_secs() / 60) % 60;
-    let hours = (print_time.as_secs() / 60) / 60; 
-    printer.comment(&format!("Print took {}:{}:{} and used {:.3}m of filament", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0)));
-    println!("Print took {}:{}:{} and used {:.3}m of filament", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0));
-
+    println!("Total:");
+    report_time(&mut printer);
     printer.write_cache();
     let elapsed = now.elapsed();
     println!("Generated in: {:.2?}", elapsed);
+}
+
+fn report_time(printer: &mut Printer) {
+    let print_time = printer.get_time_spent();
+    let seconds = print_time.as_secs() % 60;
+    let minutes = (print_time.as_secs() / 60) % 60;
+    let hours = (print_time.as_secs() / 60) / 60;
+    printer.comment(&*format!("Took {}:{}:{} and used {:.3}m of filament up to this point", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0)));
+    println!("Took {}:{}:{} and used {:.3}m of filament up to this point", hours, minutes, seconds, (printer.get_dist_extruded()/1000.0));
 }
 
 fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, layer_height: f64, overhang_speed: i32, disc_diameter: f64, print_speed: i32) {
@@ -95,16 +105,31 @@ fn print_mushroom(printer: &mut Printer, axle_diameter: f64, line_width: f64, la
 }
 
 fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_location: na::Vector3<f64>, spacing: f64, layer_height: f64, distance_decay: bool){
+    // we only need to compute these once
+    let used_radius = (diameter - (spacing/2.0))/2.0; // compensate for line thickness
+    let last_full_theta = used_radius/spacing * 2.0 * PI; // when we need to start going from spiral to circle
+    // the spiral -> circle math was worked out here: https://www.desmos.com/calculator/palgixuatw
+
     // let's spiral out, a few times on top of each other
     for layer in 1..=((height/layer_height).floor() as i32) {
         //println!("Now on layer {}/{}, decaying? {}", layer, ((height/layer_height).floor() as i32), distance_decay);
         printer.move_extruder(-3.0);
-        printer.travel_to(starting_location + point3!(0, 0, layer as f64*layer_height));
+        printer.travel_to(printer.position + point3!(0, 0, 1));
+        printer.travel_to(starting_location + point3!(0, 0, layer as f64*layer_height - 1.0));
+        printer.travel_to(printer.position + point3!(0, 0, 1));
         printer.move_extruder(3.0);
 
-        for theta_deg in (0..(360*(diameter/2.0/spacing).floor() as i32)).step_by(5) {
+        for theta_deg in (0..=(360.0*(used_radius/spacing + 1.0)) as i32).step_by(5) {
             let theta = theta_deg as f64 * PI / 180.0;
-            let r = (spacing / (2.0*PI)) * theta;
+            let r;
+            if theta < last_full_theta {
+                r = (spacing / (2.0*PI)) * theta;
+            } else {
+                r = (((spacing / (2.0*PI)) * theta) + used_radius) / 2.0; // average the spiral and a circle to get a smooth curve
+                // also, the line width will be different
+                printer.set_line_width(used_radius + spacing - (spacing / 2.0 * (theta/PI-2.0) + spacing));
+                printer.comment(&format!("Spiral ease: θ: {:.2}π, r: {:.2}, width: {:.4}", theta/PI, r, used_radius + spacing - (spacing / 2.0 * (theta/PI-2.0) + spacing)));
+            }
             let point = point3!(r*theta.cos() + starting_location.x, r*theta.sin() + starting_location.y, printer.position.z);
             if distance_decay{
                 let print_factor = circle_decay_flow_factor(r, diameter);
@@ -115,6 +140,7 @@ fn print_cylinder(printer: &mut Printer, diameter: f64, height: f64, starting_lo
                 printer.extrude_to(point)
             }
         }
+        printer.set_line_width(0.4);
         printer.set_flow_multiplier(1.0);
     }
 }
