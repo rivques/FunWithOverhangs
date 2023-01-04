@@ -10,18 +10,18 @@ fn main() {
     let layer_height = 0.2; // mm
     let line_width = 0.4; // mm
     // let center_point = Point3d {x: 100.0, y: 100.0, z:layer_height};
-    let hotend_temp = 195.0;// ℃
+    let hotend_temp = 200.0;// ℃
     let bed_temp = 55.0; // ℃
     let filament_dia = 1.75; // mm
-    let travel_speed = 3000; // mm/min
+    let travel_speed = 2000; // mm/min
     let print_speed = 2700; // mm/min
     let overhang_speed = 300; // mm/min
-    let z_offset = 0.1; // mm
+    let z_offset = 0.0; // mm
 
     // print specifics
-    let disc_diameter = 30.0; // mm
+    let disc_diameter = 20.0; // mm
     let axle_diameter = 10.0; // mm
-    let file_name = "output\\small_roller.gcode";
+    let file_name = "output\\overhang_prusa_tuning.gcode";
     
     let file = File::create(file_name).unwrap();
 
@@ -54,12 +54,12 @@ fn main() {
     println!("First cylinder:");
     report_time(&mut printer);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
-    println!("First mushroom:");
-    report_time(&mut printer);
-    print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
-    println!("Second mushroom:");
-    report_time(&mut printer);
-    print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    // println!("First mushroom:");
+    // report_time(&mut printer);
+    // print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    // println!("Second mushroom:");
+    // report_time(&mut printer);
+    // print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
     // retract, then raise up a bit
     printer.comment("retract");
     printer.move_extruder(-5.0);
