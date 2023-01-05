@@ -54,12 +54,12 @@ fn main() {
     println!("First cylinder:");
     report_time(&mut printer);
     print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
-    // println!("First mushroom:");
-    // report_time(&mut printer);
-    // print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
-    // println!("Second mushroom:");
-    // report_time(&mut printer);
-    // print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    println!("First mushroom:");
+    report_time(&mut printer);
+    print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
+    println!("Second mushroom:");
+    report_time(&mut printer);
+    print_mushroom(&mut printer, axle_diameter, line_width, layer_height, overhang_speed, disc_diameter, print_speed);
     // retract, then raise up a bit
     printer.comment("retract");
     printer.move_extruder(-5.0);
